@@ -1,0 +1,14 @@
+{
+  "fach": {
+    "type": "choice",
+    "values": ["physics","chemistry","mathematics","biology","astronomy"]
+  },
+  "umfang": {
+    "type": "choice",
+    "values": ["klein", "mittel", "gross"]
+  },
+  "autor":{
+    "type": "choice",
+    "values": ["Institut fuer Forschung", "Studentenorganisation", "Privat", "Unternehmen", "Professor"]
+  }
+}

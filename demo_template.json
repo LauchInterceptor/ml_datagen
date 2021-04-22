@@ -1,0 +1,17 @@
+{
+  "auswahl": {
+    "type": "choice",
+    "values": ["Nummer 1", "Nummer 2","Nummer 3"]
+  },
+  "ganzzahl": {
+    "type": "int",
+    "min": 0,
+    "max": 100,
+    "step": 1
+  },
+  "kommazahl": {
+    "type": "float",
+    "min": 0,
+    "max": 100
+  }
+}
