@@ -1,17 +1,38 @@
 {
   "auswahl": {
+    "_description_":{
+      "values": "Array von Werten unter denen Entschieden wird"
+    },
     "type": "choice",
     "values": ["Nummer 1", "Nummer 2","Nummer 3"]
   },
   "ganzzahl": {
+    "_description_":{
+      "min": "Minimalwert",
+      "max": "Maximalwert",
+      "step": "Schrittgröße"
+    },
     "type": "int",
     "min": 0,
     "max": 100,
     "step": 1
   },
   "kommazahl": {
+    "_description_":{
+      "min": "Minimalwert",
+      "max": "Maximalwert"
+    },
     "type": "float",
     "min": 0,
     "max": 100
+  },
+  "wahrheitswert": {
+    "_description_":{
+      "probability": "Wert von 0.0 bis 1.0, bestimmt die wahrscheinlichkeit des wahrheitswerts",
+      "format": "'numeric' = 0/1 'text'= false/true"
+    },
+    "type": "boolean",
+    "probability": 0.5,
+    "format": "numeric"
   }
 }

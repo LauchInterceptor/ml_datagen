@@ -10,5 +10,10 @@
   "autor":{
     "type": "choice",
     "values": ["Institut fuer Forschung", "Studentenorganisation", "Privat", "Unternehmen", "Professor"]
+  },
+  "folgeantrag": {
+    "type": "boolean",
+    "probability": 0.05,
+    "format": "text"
   }
 }
