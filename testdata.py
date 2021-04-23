@@ -49,12 +49,28 @@ def template_random_float(t):
     return closure
 
 
+def template_random_boolean(t):
+    probability = t.get("probability", 0.5)
+    boolean_format = t.get("format", "numeric")
+
+    def format_result(b):
+        if boolean_format == "numeric":
+            return "1" if b else "0"
+        elif boolean_format == "text":
+            return "True" if b else "False"
+
+    def closure():
+        return format_result(True if random.random() < probability else False)
+    return closure
+
+
 def compile_entry_generators(template_dict):
 
     generator_types = {
         "choice": template_choice,
         "int": template_random_integer,
         "float": template_random_float,
+        "boolean": template_random_boolean
     }
 
     generators = {}
@@ -64,7 +80,7 @@ def compile_entry_generators(template_dict):
     return generators
 
 
-def generate_entries(template_dict,generators, no_entries):
+def generate_entries(template_dict, generators, no_entries):
     # add first row for column identification
     entries = [list(template_dict.keys())]
     for i in range(no_entries):
@@ -74,6 +90,7 @@ def generate_entries(template_dict,generators, no_entries):
         entries.append(entry)
     return entries
 
+
 def create_csv(entries):
     rows = []
     for entry in entries:
@@ -81,12 +98,13 @@ def create_csv(entries):
         rows.append(row)
     return "\n".join(rows)
 
+
 def write_output_file(path, content):
     with open(path, 'w') as writer:
         writer.write(content)
 
 template_dictionary = read_template_file(template_file)
-#create entry generators from template file
+#create dict of entry generators from template file
 entry_generators = compile_entry_generators(template_dictionary)
 #generate entries
 entries = generate_entries(template_dictionary, entry_generators, generated_entries)
