@@ -34,5 +34,30 @@
     "type": "boolean",
     "probability": 0.5,
     "format": "numeric"
+  },
+  "ausdrücke": {
+    "_description_": {
+      "expr": "Python ausdruck. Verfügbare Module{math} und Funktionen{floor,sqrt,random,gauss,clamp}"
+    },
+    "expr": "floor(random() * 10)"
+  },
+  "zusammenschluss": {
+    "_description_": {
+      "generators": "Array mit templates welche in der Spalte konkateniert werden"
+    },
+    "type": "join",
+    "generators":[
+      {
+        "type": "choice",
+        "values": ["Männlich","Weiblich"]
+      },
+      {
+        "type": "int",
+        "min": 12,
+        "max": 30
+      }
+    ],
+    "separator": " "
   }
+
 }
