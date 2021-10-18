@@ -39,6 +39,7 @@
     "_description_": {
       "expr": "Python ausdruck. Verfügbare Module{math} und Funktionen{floor,sqrt,random,gauss,clamp}"
     },
+    "type": "expression",
     "expr": "floor(random() * 10)"
   },
   "zusammenschluss": {
