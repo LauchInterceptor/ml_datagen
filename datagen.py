@@ -21,7 +21,7 @@ output_file = str(sys.argv[3])
 
 max_workload = 10000
 workers = max(1, multiprocessing.cpu_count())
-if dataset_size < 10:
+if dataset_size < 1000:
     workers = 1
 
 
@@ -64,11 +64,25 @@ def template_join(t):
 
 def template_choice(t):
     choices = t['values']
+    weights = t.get('weights', None)
 
-    def closure():
-        return random.choice(choices)
+    if weights is not None and len(choices) == len(weights):
+        weights = map(int, weights)
+        cumulative_weights = []
+        weight = 0
+        for w in weights:
+            weight += w
+            cumulative_weights.append(weight)
 
-    return closure
+        def closure():
+            return random.choices(choices, cum_weights=cumulative_weights)[0]
+
+        return closure
+    else:
+        def closure():
+            return random.choice(choices)
+        return closure
+
 
 
 expression_globals = {
@@ -225,7 +239,6 @@ class Pipeline(Queue):
         self.complete += 1
         if self.complete % 10 == 0 or self.complete == dataset_size:
             print(f'\r{self.workers}\t{self.complete}\t{self.buffered}\t{dataset_size}\t'+'{:4.2f}'.format((self.complete / dataset_size) * 100) + '\t' + time.strftime('%H:%M:%S', time.gmtime(self.predict())), end='\r')
-            #time.strftime('%H:%M:%S', time.gmtime())
         return value
 
 
@@ -250,10 +263,7 @@ write_thread.start()
 print(f'Workers\tWritten\tBuffer\tTotal\t%\tETA')
 with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
     threads = [executor.submit(generate_entries, *(pipeline_queue, done_event, template_dictionary, entry_generators, thread_workload)) for thread_workload in workloads]
-
-
 done_event.set()
-
 
 
 
