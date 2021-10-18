@@ -4,7 +4,8 @@
       "values": "Array von Werten unter denen Entschieden wird"
     },
     "type": "choice",
-    "values": ["Nummer 1", "Nummer 2","Nummer 3"]
+    "values": ["Nummer 1", "Nummer 2","Nummer 3"],
+    "weights": [1,2,3]
   },
   "ganzzahl": {
     "_description_":{
