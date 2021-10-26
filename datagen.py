@@ -7,17 +7,29 @@ import threading
 import traceback
 import concurrent.futures
 import multiprocessing
+import argparse
+import pathlib
 from queue import Queue
 
-if len(sys.argv) < 3:
-    print("usage <dataset size> <template path> <output path>")
-    exit(0)
+parser = argparse.ArgumentParser(description="Generate tabular data", add_help=False)
+parser.add_argument("--help", action='help', help="print this help")
+parser.add_argument("-h", action='store_true', dest='include_header', help="include column header at the top")
+parser.add_argument('template_path', metavar='template', type=pathlib.Path, help="number of generated rows")
+parser.add_argument("-o", dest='output_path', type=pathlib.Path, help="path of the output file")
+parser.add_argument("-n", type=int, required=True, dest='dataset_size', help="number of generated rows")
 
+# if len(sys.argv) < 3:
+#     print("usage <dataset size> <include header> <template path> <output path>")
+#     exit(0)
 
-dataset_size = int(sys.argv[1])
-template_file = str(sys.argv[2])
-output_file = str(sys.argv[3])
+parsed_args = parser.parse_args()
 
+dataset_size = parsed_args.dataset_size
+include_header = parsed_args.include_header
+template_file = parsed_args.template_path
+output_file = parsed_args.output_path
+if not output_file:
+    output_file = template_file.with_suffix(".csv")
 
 max_workload = 10000
 workers = max(1, multiprocessing.cpu_count())
@@ -26,7 +38,7 @@ if dataset_size < 1000:
 
 
 def read_template_file(path):
-    with open(path, 'r') as reader:
+    with path.open('r') as reader:
         content = reader.read()
     return json.loads(content)
 
@@ -60,6 +72,13 @@ def template_join(t):
             results.append(gen())
         return separator.join(results)
     return closure
+
+
+def template_const(t):
+    value = str(t['value', ''])
+
+    def closure():
+        return value
 
 
 def template_choice(t):
@@ -211,7 +230,7 @@ def csv_format(entry):
 
 
 def write_output_file(pipeline, event, path):
-    with open(path, 'w') as writer:
+    with path.open('w') as writer:
         while not event.is_set() or not pipeline.empty():
             writer.write(csv_format(pipeline.get_entry()) + '\n')
 
