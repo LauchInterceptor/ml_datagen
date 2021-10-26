@@ -43,6 +43,15 @@
     "type": "expression",
     "expr": "floor(random() * 10)"
   },
+  "verteilung": {
+    "type": "spread",
+    "columns": 10,
+    "generator": {
+      "type": "int",
+      "min": 0,
+      "max": 100
+    }
+  },
   "zusammenschluss": {
     "_description_": {
       "generators": "Array mit templates welche in der Spalte konkateniert werden"

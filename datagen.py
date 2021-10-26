@@ -145,6 +145,7 @@ def template_random_boolean(t):
 
 
 generator_factories = {
+    "const": template_const,
     "choice": template_choice,
     "int": template_random_integer,
     "float": template_random_float,
@@ -159,26 +160,39 @@ def build_generator(template):
     return generator_factories[template["type"]](template)
 
 
-def compile_entry_generators(template_dict):
+def compile_entry_generators(template):
     generators = {}
-    for attr in template_dict.keys():
-        template = template_dict[attr]
-        generators[attr] = build_generator(template)
+    for column_name in template.keys():
+        column_template = template[column_name]
+        generators[column_name] = build_generator(column_template)
     return generators
 
 
-completed_entries = 0
+# Creates tuple with (column_name,generator_key)
+def list_columns(template):
+    columns = []
+    for column_name in template.keys():
+        column_template = template[column_name]
+        if column_template["type"] == "spread":
+            number_of_columns = column_template["columns"]
+            digits = 1 + math.floor(math.log10(number_of_columns))
+            for index in range(number_of_columns):
+                identifier = ("{:0>"+str(digits)+"}").format(index)
+                columns.append((f"{column_name}-{identifier}", str(column_name)))
+        else:
+            column = (column_name, column_name)
+            columns.append(column)
+    return columns
 
 
-def generate_entries(pipeline, event, template_dict, generators, entry_count):
+def generate_entries(pipeline, event, column_templates, generators, entry_count):
     pipeline.workers += 1
-    # print('Started worker with {number} entries'.format(number=entry_count))
-    # add first row for column identification
+
     try:
         for i in range(entry_count):
             entry = []
-            for attr in template_dict.keys():
-                if template_dict[attr]["type"] == "spread":
+            for attr in column_templates.keys():
+                if column_templates[attr]["type"] == "spread":
                     entry = entry + generators[attr]()
                 else:
                     entry.append(generators[attr]())
@@ -190,7 +204,10 @@ def generate_entries(pipeline, event, template_dict, generators, entry_count):
 
 
 def csv_format(entry):
-    return ";".join(entry)
+    try:
+        return ";".join(entry)
+    except TypeError:
+        print(f"Could not format {entry}")
 
 
 def write_output_file(pipeline, event, path):
@@ -204,6 +221,7 @@ class Pipeline(Queue):
     submitted = 0
     buffered = 0
     complete = 0
+    header = False
 
     _tstart = 0
     _clast = 0
@@ -233,19 +251,27 @@ class Pipeline(Queue):
         self.buffered += 1
         self.put(entry, True)
 
+    def put_header(self, header):
+        self.header = True
+        self.put(header, True)
+
     def get_entry(self):
         value = self.get(True)
+        if self.header:
+            self.header = False
+            return value
         self.buffered -= 1
         self.complete += 1
-        if self.complete % 10 == 0 or self.complete == dataset_size:
+        if self.complete % 10 == 0 and self.complete == dataset_size:
             print(f'\r{self.workers}\t{self.complete}\t{self.buffered}\t{dataset_size}\t'+'{:4.2f}'.format((self.complete / dataset_size) * 100) + '\t' + time.strftime('%H:%M:%S', time.gmtime(self.predict())), end='\r')
         return value
 
 
 
-template_dictionary = read_template_file(template_file)
-#create dict of entry generators from template file
-entry_generators = compile_entry_generators(template_dictionary)
+column_templates = read_template_file(template_file)
+column_names = list_columns(column_templates)
+#create dict of column generators from template file
+column_data_generators = compile_entry_generators(column_templates)
 #generate entries
 done_event = threading.Event()
 pipeline_queue = Pipeline(maxsize=1000)
@@ -257,13 +283,27 @@ while remaining_entries > 0:
     remaining_entries -= workload
     workloads.append(workload)
 
+
+
 write_thread = threading.Thread(target=write_output_file,args=(pipeline_queue, done_event, output_file))
 write_thread.start()
 
-print(f'Workers\tWritten\tBuffer\tTotal\t%\tETA')
-with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
-    threads = [executor.submit(generate_entries, *(pipeline_queue, done_event, template_dictionary, entry_generators, thread_workload)) for thread_workload in workloads]
-done_event.set()
+if include_header:
+    pipeline_queue.put_header([column[0] for column in column_names])
+
+try:
+    print(f'Workers\tWritten\tBuffer\tTotal\t%\tETA')
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+        threads = [executor.submit(generate_entries, *(pipeline_queue, done_event, column_templates, column_data_generators, thread_workload)) for thread_workload in workloads]
+    done_event.set()
+except Exception as ex:
+    print(ex)
+    done_event.set()
+    for thread in threads:
+        thread.cancel()
+    write_thread.join()
+print("\r\n", end="")
+
 
 
 
